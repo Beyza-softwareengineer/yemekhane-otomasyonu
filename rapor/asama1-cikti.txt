@@ -1,0 +1,61 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261119135050
+Username: LAPTOP-51O0FTGR\Beyza
+RunAs User: LAPTOP-51O0FTGR\Beyza
+Configuration Name: 
+Machine: LAPTOP-51O0FTGR (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 11512
+PSVersion: 5.1.26100.9818
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9818
+BuildVersion: 10.0.26100.9818
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is rapor\asama1-cikti.txt
+PS C:\okul\yemekhane> docker compose ps -a
+
+PS C:\okul\yemekhane> # 1) Replikasyon durumu (Replica_IO_Running ve Replica_SQL_Running = Yes olmalı)
+PS C:\okul\yemekhane> docker compose exec mysql-replica mysql -uroot -pyemekhane_kok -e "SHOW REPLICA STATUS\G"
+
+PS C:\okul\yemekhane> # 2) Kaynakta bakiye yükle
+PS C:\okul\yemekhane> docker compose exec mysql-primary mysql -uyemekhane_app -pUyg_2026 yemekhane -e "CALL sp_bakiye_yukle(7, 100)"
+
+PS C:\okul\yemekhane> # 3) Replikada gör
+PS C:\okul\yemekhane> docker compose exec mysql-replica mysql -uyemekhane_app -pUyg_2026 yemekhane -e "SELECT id, bakiye FROM kullanicilar WHERE id = 7"
+
+PS C:\okul\yemekhane> # 4) Replikaya yazma denemesi (ERROR 1290 beklenir)
+PS C:\okul\yemekhane> docker compose exec mysql-replica mysql -uyemekhane_app -pUyg_2026 yemekhane -e "SELECT id, bakiye FROM kullanicilar WHERE id = 7"
+
+PS C:\okul\yemekhane> docker compose exec mysql-replica mysql -uyemekhane_app -pUyg_2026 yemekhane -e "CALL sp_bakiye_yukle(7, 50)"
+
+PS C:\okul\yemekhane> docker compose stop mysql-replica
+
+PS C:\okul\yemekhane> docker compose exec mysql-primary mysql -uyemekhane_app -pUyg_2026 yemekhane -e "CALL sp_bakiye_yukle(7, 200)"
+
+PS C:\okul\yemekhane> docker compose start mysql-replica
+
+PS C:\okul\yemekhane> docker compose ps -a
+
+PS C:\okul\yemekhane> docker compose exec mysql-replica mysql -uyemekhane_app -pUyg_2026 yemekhane -e "SELECT id, bakiye FROM kullanicilar WHERE id = 7"
+
+PS C:\okul\yemekhane> docker compose exec mysql-replica mysql -uroot -pyemekhane_kok -e "SHOW REPLICA STATUS\G" | Select-String "Running|Seconds_Behind"
+
+           Replica_IO_Running: Yes
+          Replica_SQL_Running: Yes
+        Seconds_Behind_Source: 0
+    Replica_SQL_Running_State: Replica has read all relay log; waiting for
+more updates
+
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli ping
+
+PS C:\okul\yemekhane> Stop-Transcript
+**********************
+Windows PowerShell transcript end
+End time: 20261119135817
+**********************
