@@ -1,0 +1,91 @@
+/* Yemekhane Otomasyonu · uygulama stilleri (temel.css değişkenlerini kullanır)
+   Mobil önce: 400 px genişlikte tek sütun, geniş ekranda ızgara. */
+
+/* ---------- Üst çubuk ---------- */
+.ust { background: var(--ana); color: #fff; }
+.ust-ic { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding-block: .6rem; flex-wrap: wrap; }
+.marka { color: #fff; font-weight: 700; font-size: var(--boyut-buyuk); text-decoration: none; }
+.marka:hover { color: #fff; }
+.kisi { display: flex; align-items: center; gap: .6rem; font-size: var(--boyut-kucuk); }
+.kisi .bakiye-etiket { background: rgba(255,255,255,.18); padding: .15rem .55rem; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+.ust-nav { display: flex; gap: .25rem; overflow-x: auto; padding-bottom: .5rem; -webkit-overflow-scrolling: touch; }
+.ust-nav a { color: #fff; text-decoration: none; padding: .5rem .75rem; border-radius: var(--kose); white-space: nowrap; font-size: var(--boyut-kucuk); min-height: 44px; display: inline-flex; align-items: center; }
+.ust-nav a:hover { background: rgba(255,255,255,.15); color: #fff; }
+.ust-nav a[aria-current="page"] { background: #fff; color: var(--ana-koyu); font-weight: 700; }
+
+main.kapsayici { padding-block: 1.25rem 3rem; }
+.sayfa-baslik { margin-bottom: .25rem; }
+.sayfa-alt { color: var(--metin-soluk); margin-bottom: 1rem; }
+
+/* ---------- Kartlar ve düzen ---------- */
+.kart { background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--kose); padding: var(--bosluk); margin-bottom: var(--bosluk); }
+.kart h2 { margin-bottom: .6rem; }
+.kart-baslik { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
+.kart-baslik h2 { margin: 0; }
+.soluk { color: var(--metin-soluk); font-size: var(--boyut-kucuk); }
+
+.filtre { display: grid; gap: .75rem; grid-template-columns: 1fr; margin-bottom: var(--bosluk); }
+.filtre > div { min-width: 0; }
+@media (min-width: 640px) { .filtre { grid-template-columns: repeat(3, 1fr); } }
+
+.dugme-ikincil { background: transparent; color: var(--ana); border: 1px solid var(--ana); }
+.dugme-ikincil:hover { background: var(--zemin); color: var(--ana-koyu); }
+.ust .dugme-ikincil { color: #fff; border-color: rgba(255,255,255,.7); min-height: 36px; padding: .3rem .75rem; }
+.ust .dugme-ikincil:hover { background: rgba(255,255,255,.15); color: #fff; }
+.dugme-tehlike { background: var(--hata); }
+.dugme-tehlike:hover { background: #8c1d17; }
+.dugme-tam { width: 100%; }
+.dugme-satir { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Etiketler ---------- */
+.etiket { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; background: var(--zemin); color: var(--metin); border: 1px solid var(--cizgi); }
+.etiket-yesil { background: var(--basari-zemin); color: var(--basari); border-color: transparent; }
+.etiket-sari { background: #FDF1D6; color: #7A5200; border-color: transparent; }
+.etiket-kirmizi { background: var(--hata-zemin); color: var(--hata); border-color: transparent; }
+.etiket-gri { background: #E8ECEB; color: var(--metin-soluk); border-color: transparent; }
+.fiyat { color: var(--metin); font-weight: 700; }
+.fiyat-vurgu { background: var(--vurgu); color: #3b2a00; padding: .05rem .5rem; border-radius: 4px; font-weight: 700; }
+
+/* ---------- Günün menüsü ---------- */
+.ozet { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.kategori { font-size: var(--boyut-kucuk); text-transform: uppercase; letter-spacing: .04em; color: var(--metin-soluk); margin: 1rem 0 .25rem; }
+.yemek-liste { list-style: none; margin: 0; padding: 0; }
+.yemek { display: flex; justify-content: space-between; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--cizgi); }
+.yemek:last-child { border-bottom: 0; }
+.yemek-ad { font-weight: 600; }
+.yemek-ek { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .2rem; }
+.kalori { white-space: nowrap; color: var(--metin-soluk); font-size: var(--boyut-kucuk); }
+
+/* ---------- Haftalık menü ve rezervasyonlar ---------- */
+.ogun-satir { display: grid; gap: .5rem; padding: .75rem 0; border-top: 1px solid var(--cizgi); }
+.ogun-satir:first-of-type { border-top: 0; }
+.ogun-ad { font-weight: 700; }
+.ogun-yemekler { color: var(--metin-soluk); font-size: var(--boyut-kucuk); }
+.ogun-meta { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+@media (min-width: 640px) { .ogun-satir { grid-template-columns: 1fr auto; align-items: center; } }
+
+.rez { display: grid; gap: .4rem; }
+.rez-ust { display: flex; justify-content: space-between; gap: .5rem; align-items: center; flex-wrap: wrap; }
+
+/* ---------- Bakiye ---------- */
+.buyuk-bakiye { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+.tablo { width: 100%; border-collapse: collapse; font-size: var(--boyut-kucuk); }
+.tablo th, .tablo td { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid var(--cizgi); vertical-align: top; }
+.tablo th { color: var(--metin-soluk); font-weight: 600; white-space: nowrap; }
+.tablo td.sayi, .tablo th.sayi { text-align: right; white-space: nowrap; }
+.arti { color: var(--basari); font-weight: 600; }
+.eksi { color: var(--hata); font-weight: 600; }
+
+/* ---------- Formlar ---------- */
+.alan { margin-bottom: .9rem; }
+.alan-satir { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr; }
+.yardim { color: var(--metin-soluk); font-size: var(--boyut-kucuk); margin-top: .2rem; }
+.giris-kutu { max-width: 420px; margin: 2rem auto; }
+.bildirim { margin-bottom: var(--bosluk); }
+.bildirim:empty { display: none; }
+fieldset { border: 1px solid var(--cizgi); border-radius: var(--kose); margin: 0 0 .75rem; padding: .5rem .75rem; }
+legend { font-weight: 600; padding-inline: .3rem; }
+.secenek { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; min-height: 36px; font-weight: 400; }
+.secenek input { width: auto; flex: none; }
+.yildiz { color: #C98A00; letter-spacing: .1em; }
+.bos { color: var(--metin-soluk); text-align: center; padding: 1.5rem 0; }
