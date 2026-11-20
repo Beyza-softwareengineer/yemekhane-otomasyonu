@@ -1,36 +1,36 @@
-// Oturum deposu. Şimdilik bellekte tutulur (Aşama 2).
-// Aşama 3'te bu dosyanın içi Redis ile değiştirilecek; dışarıya açılan arayüz aynı kalır.
+// Oturum deposu: Redis. Anahtar oturum:{token}, süre 30 dakika, her istekte yenilenir.
+// Oturum çıkış yapıldığında (sil) silinir. Uygulama container'ı yeniden başlasa da
+// oturum Redis'te durduğu için düşmez.
 const crypto = require('crypto');
 const config = require('./config');
+const redis = require('./redis');
 
-const SURE_MS = config.oturum.sureSaniye * 1000;
-const depo = new Map(); // token -> { veri, bitis }
+const SURE = config.oturum.sureSaniye; // 1800 sn
+const anahtar = (token) => `oturum:${token}`;
 
 async function olustur(veri) {
   const token = crypto.randomBytes(32).toString('hex');
-  depo.set(token, { veri, bitis: Date.now() + SURE_MS });
+  await redis.set(anahtar(token), JSON.stringify(veri), 'EX', SURE);
   return token;
 }
 
-// Oturumu getirir ve süresini yeniler (kayan süre: 30 dakika).
+// Oturumu getirir ve süresini yeniler (kayan süre). GETEX: oku + süreyi yeniden kur, tek komut.
 async function getir(token) {
-  const kayit = depo.get(token);
-  if (!kayit) return null;
-  if (kayit.bitis < Date.now()) {
-    depo.delete(token);
-    return null;
-  }
-  kayit.bitis = Date.now() + SURE_MS;
-  return kayit.veri;
+  if (!/^[0-9a-f]{64}$/.test(token || '')) return null; // geçersiz biçimde Redis'e hiç sorma
+  const metin = await redis.getex(anahtar(token), 'EX', SURE);
+  return metin ? JSON.parse(metin) : null;
 }
 
+// Oturumdaki alanları günceller; mevcut süreyi bozmaz (KEEPTTL).
 async function guncelle(token, kismiVeri) {
-  const kayit = depo.get(token);
-  if (kayit) Object.assign(kayit.veri, kismiVeri);
+  const metin = await redis.get(anahtar(token));
+  if (!metin) return;
+  const yeni = { ...JSON.parse(metin), ...kismiVeri };
+  await redis.set(anahtar(token), JSON.stringify(yeni), 'KEEPTTL');
 }
 
 async function sil(token) {
-  depo.delete(token);
+  await redis.del(anahtar(token));
 }
 
 module.exports = { olustur, getir, guncelle, sil };

@@ -13,13 +13,14 @@ async function gunMenusu(req, res) {
   const tarih = dogrula.tarih(req.query.tarih);
   const havuz = okumaHavuzu(req);
 
-  const menuId = await menuRepo.menuBul(havuz, yemekhaneId, tarih, ogunId);
-  if (!menuId) return res.json({ menu: null });
+  // Menü içeriği önbellekten (ya da veritabanından) gelir; doluluk ve kullanıcının
+  // rezervasyonu her seferinde veritabanından okunur.
+  const menu = await menuRepo.onbellekliIcerik(havuz, yemekhaneId, tarih, ogunId);
+  if (!menu) return res.json({ menu: null });
 
-  const [menu, doluluk, rezervasyon] = await Promise.all([
-    menuRepo.icerik(havuz, menuId),
-    menuRepo.doluluk(havuz, menuId),
-    menuRepo.kullanicininRezervasyonu(havuz, req.kullanici.id, menuId),
+  const [doluluk, rezervasyon] = await Promise.all([
+    menuRepo.doluluk(havuz, menu.id),
+    menuRepo.kullanicininRezervasyonu(havuz, req.kullanici.id, menu.id),
   ]);
   res.json({
     menu: { ...menu, fiyat: menuRepo.fiyatSec(req.kullanici.rol, menu) },

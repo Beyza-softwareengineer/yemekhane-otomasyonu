@@ -22,4 +22,7 @@ module.exports = {
   // Kendi yazdığımız veriyi hemen görebilmek için: yazmadan sonra bu süre boyunca
   // okumalar kaynak sunucuya gider (replikasyon gecikmesine karşı).
   yazdiktanSonraKaynakMs: 3000,
+  // Yönetici bir menüyü değiştirdikten sonra bu süre boyunca menü önbelleği kaynaktan doldurulur.
+  // Böylece replikasyon gecikmesi yüzünden eski içerik tekrar önbelleğe yazılmaz.
+  menuDegisiklikPenceresiMs: 5000,
 };

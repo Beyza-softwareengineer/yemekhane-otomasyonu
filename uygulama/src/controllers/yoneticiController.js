@@ -1,4 +1,5 @@
 const menuRepo = require('../repositories/menuRepo');
+const menuOnbellekRepo = require('../repositories/menuOnbellekRepo');
 const dogrula = require('./dogrula');
 const { UygulamaHatasi } = require('../hatalar');
 const { okumaHavuzu, yazmaIsaretle } = require('../middleware/oturum');
@@ -64,6 +65,9 @@ async function menuGuncelle(req, res) {
   try {
     const sonuc = await menuRepo.guncelle(id, govdedenMenu(req.body));
     if (!sonuc) throw new UygulamaHatasi(404, 'Menü bulunamadı.');
+    // Veritabanı değişti: eski içerik Redis'ten silinir (arayüz yeni menüyü göstersin).
+    await menuOnbellekRepo.gecersizlestir(sonuc.yemekhane_id, sonuc.tarih, sonuc.ogun_id);
+    console.log(`[önbellek] ${menuOnbellekRepo.anahtar(sonuc.yemekhane_id, sonuc.tarih, sonuc.ogun_id)} menü güncellendi -> Redis kaydı silindi`);
     await yazmaIsaretle(req);
     res.json({ id });
   } catch (err) {

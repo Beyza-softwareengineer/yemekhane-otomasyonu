@@ -1,5 +1,6 @@
 // Veri katmanı: menüler. Hazır view'lar (v_menu_detay, v_menu_doluluk, v_menu_puan) kullanılır.
 const { yazma } = require('../db');
+const menuOnbellek = require('./menuOnbellekRepo');
 
 // Rol'e göre gösterilecek fiyat. (Ücreti asıl keser sp_rezervasyon_yap; bu yalnızca gösterim.)
 function fiyatSec(rol, menu) {
@@ -57,6 +58,46 @@ async function icerik(havuz, menuId) {
     toplam_kalori: yemekler.reduce((t, y) => t + y.kalori, 0),
     tamami_vejetaryen: yemekler.every((y) => y.vejetaryen),
   };
+}
+
+// Günün menüsü içeriği, önce Redis'e bakılır (Aşama 3).
+//  - Önbellekte varsa: veritabanına hiç gidilmez.
+//  - Yoksa: veritabanından okunur ve önbelleğe yazılır.
+// Yönetici bu menüyü az önce değiştirdiyse okuma kaynaktan yapılır (replika henüz geride olabilir).
+// Redis'e ulaşılamazsa önbellek atlanır, uygulama veritabanıyla çalışmaya devam eder.
+async function onbellekliIcerik(okumaHavuzu, yemekhaneId, tarih, ogunId) {
+  const anahtar = menuOnbellek.anahtar(yemekhaneId, tarih, ogunId);
+  try {
+    const onbellekte = await menuOnbellek.oku(yemekhaneId, tarih, ogunId);
+    if (onbellekte) {
+      console.log(`[önbellek] ${anahtar} VAR -> Redis'ten geldi`);
+      return onbellekte;
+    }
+  } catch (err) {
+    console.error(`[önbellek] okuma hatası, veritabanına geçiliyor: ${err.message}`);
+  }
+
+  let havuz = okumaHavuzu;
+  let kaynakAdi = 'replika';
+  try {
+    if (await menuOnbellek.yakindaDegisti(yemekhaneId, tarih, ogunId)) {
+      havuz = yazma;
+      kaynakAdi = 'kaynak (menü az önce değişti)';
+    }
+  } catch (err) {
+    console.error(`[önbellek] işaret kontrolü hatası: ${err.message}`);
+  }
+
+  const menuId = await menuBul(havuz, yemekhaneId, tarih, ogunId);
+  if (!menuId) return null; // olmayan menü önbelleğe yazılmaz
+  const icerikVerisi = await icerik(havuz, menuId);
+  console.log(`[önbellek] ${anahtar} YOK -> veritabanından okundu (${kaynakAdi}), Redis'e yazılıyor`);
+  try {
+    await menuOnbellek.yaz(yemekhaneId, tarih, ogunId, icerikVerisi);
+  } catch (err) {
+    console.error(`[önbellek] yazma hatası: ${err.message}`);
+  }
+  return icerikVerisi;
 }
 
 // Anlık doluluk ve son saat (önbelleğe ALINMAZ). kapandi'yı veritabanı hesaplar.
@@ -198,6 +239,6 @@ async function guncelle(menuId, { ogrenciFiyati, personelFiyati, yemekIdler }) {
 }
 
 module.exports = {
-  fiyatSec, secimler, menuBul, icerik, doluluk, kullanicininRezervasyonu, haftalik,
+  fiyatSec, secimler, menuBul, icerik, onbellekliIcerik, doluluk, kullanicininRezervasyonu, haftalik,
   rapor, tumYemekler, menuDuzenleme, olustur, guncelle,
 };
