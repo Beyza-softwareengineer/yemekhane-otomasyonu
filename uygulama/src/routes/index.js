@@ -8,6 +8,7 @@ const rezervasyon = require('../controllers/rezervasyonController');
 const bakiye = require('../controllers/bakiyeController');
 const degerlendirme = require('../controllers/degerlendirmeController');
 const yonetici = require('../controllers/yoneticiController');
+const profil = require('../controllers/profilController');
 
 // Express 4'te async controller hataları next'e iletilsin
 const a = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -26,6 +27,10 @@ r.get('/ben', oturumGerekli, a(auth.ben));
 r.get('/secimler', oturumGerekli, a(menu.secimler));
 r.get('/menu', oturumGerekli, a(menu.gunMenusu));
 r.get('/haftalik', oturumGerekli, a(menu.haftalik));
+
+// Profil (alerjen tercihleri)
+r.get('/profil', oturumGerekli, a(profil.goster));
+r.put('/profil/alerjenler', oturumGerekli, a(profil.alerjenKaydet));
 
 // Rezervasyon
 r.get('/rezervasyonlar', oturumGerekli, a(rezervasyon.listele));

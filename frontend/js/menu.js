@@ -39,12 +39,15 @@
           satirlar.push(h('li', { sinif: 'kategori', role: 'presentation' }, y.kategori));
           sonKategori = y.kategori;
         }
-        satirlar.push(h('li', { sinif: 'yemek' },
+        // Sunucu, kullanıcının profilindeki alerjenlerle eşleşen yemeklere uyari_alerjenleri ekler
+        const uyari = y.uyari_alerjenleri.length > 0;
+        satirlar.push(h('li', { sinif: uyari ? 'yemek yemek-uyari' : 'yemek' },
           h('div', {},
             h('div', { sinif: 'yemek-ad' }, y.ad),
             h('div', { sinif: 'yemek-ek' },
+              uyari ? h('span', { sinif: 'etiket etiket-kirmizi', role: 'alert' }, '⚠ Alerjen uyarısı: ' + y.uyari_alerjenleri.join(', ')) : null,
               y.vejetaryen ? h('span', { sinif: 'etiket etiket-yesil' }, 'Vejetaryen') : null,
-              y.alerjenler.length ? h('span', { sinif: 'etiket etiket-sari' }, 'İçerir: ' + y.alerjenler.join(', ')) : null)),
+              y.alerjenler.length ? h('span', { sinif: 'etiket etiket-sari' }, 'İçerir: ' + y.alerjenler.map((a) => a.ad).join(', ')) : null)),
           h('span', { sinif: 'kalori' }, y.kalori + ' kcal')));
       }
 
@@ -55,11 +58,13 @@
         h('div', { sinif: 'ozet' },
           h('span', { sinif: 'etiket' }, 'Toplam ' + m.toplam_kalori + ' kcal'),
           m.tamami_vejetaryen ? h('span', { sinif: 'etiket etiket-yesil' }, 'Tamamı vejetaryen') : null,
+          m.uyari_var ? h('span', { sinif: 'etiket etiket-kirmizi' }, '⚠ Alerjenlerinizi içeren yemek var') : null,
           h('span', { sinif: 'etiket' }, 'Son rezervasyon: ' + Y.zamanTR(m.rezervasyon_son)),
           rez && rez.durum !== 'iptal' ? h('span', { sinif: 'etiket etiket-sari' }, 'Rezervasyonunuz var') : null),
         h('ul', { sinif: 'yemek-liste' }, satirlar),
         h('p', { sinif: 'soluk', style: 'margin-top:1rem' },
           'Fiyatınız: ', h('span', { sinif: 'fiyat-vurgu' }, Y.para(m.fiyat)),
+          m.yarim_fiyat !== null ? ' · Yarım porsiyon: ' + Y.para(m.yarim_fiyat) : '',
           ' · Boş yer: ', h('strong', {}, d.bos_yer), ' / ' + d.kapasite,
           d.kapandi ? ' · Rezervasyon süresi doldu' : ''),
         h('a', { href: '/haftalik.html', sinif: 'dugme dugme-ikincil' }, 'Rezervasyon için haftalık menüye git')));

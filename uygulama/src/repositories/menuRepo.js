@@ -1,10 +1,18 @@
 // Veri katmanı: menüler. Hazır view'lar (v_menu_detay, v_menu_doluluk, v_menu_puan) kullanılır.
 const { yazma } = require('../db');
 const menuOnbellek = require('./menuOnbellekRepo');
+const config = require('../config');
 
 // Rol'e göre gösterilecek fiyat. (Ücreti asıl keser sp_rezervasyon_yap; bu yalnızca gösterim.)
 function fiyatSec(rol, menu) {
   return rol === 'ogrenci' ? menu.ogrenci_fiyati : menu.personel_fiyati;
+}
+
+// Yarım porsiyon gösterim fiyatı. Oran NULL ise (kahvaltı) yarım porsiyon yoktur.
+// (Ücreti asıl keser sp_rezervasyon_yap: ROUND(fiyat * oran, 2).)
+function yarimFiyat(fiyat, oran) {
+  if (oran === null || oran === undefined) return null;
+  return Math.round(Math.round(fiyat * 100) * oran) / 100;
 }
 
 async function secimler(havuz) {
@@ -27,7 +35,7 @@ async function icerik(havuz, menuId) {
   const [satirlar] = await havuz.query(
     `SELECT menu_id, tarih, yemekhane_id, yemekhane, ogun_id, ogun, rezervasyon_son,
             ogrenci_fiyati, personel_fiyati,
-            yemek_id, yemek, kategori, kalori, vejetaryen, alerjenler, alerjen_idler
+            yemek_id, yemek, kategori, kalori, vejetaryen, yarim_porsiyon_orani
        FROM v_menu_detay
       WHERE menu_id = ?
       ORDER BY kategori_sira, yemek`,
@@ -35,14 +43,30 @@ async function icerik(havuz, menuId) {
   );
   if (satirlar.length === 0) return null;
   const ilk = satirlar[0];
+
+  // Yemeklerin alerjenleri (id + ad birlikte): kullanıcıya özel uyarı, kullanıcının alerjen id'leriyle eşleştirilerek yapılır.
+  const [alerjenSatirlari] = await havuz.query(
+    `SELECT ya.yemek_id, a.id, a.ad
+       FROM menu_yemekleri my
+       JOIN yemek_alerjenleri ya ON ya.yemek_id = my.yemek_id
+       JOIN alerjenler a         ON a.id = ya.alerjen_id
+      WHERE my.menu_id = ?
+      ORDER BY a.ad`,
+    [menuId]
+  );
+  const alerjenHaritasi = new Map();
+  for (const s of alerjenSatirlari) {
+    if (!alerjenHaritasi.has(s.yemek_id)) alerjenHaritasi.set(s.yemek_id, []);
+    alerjenHaritasi.get(s.yemek_id).push({ id: s.id, ad: s.ad });
+  }
+
   const yemekler = satirlar.map((s) => ({
     id: s.yemek_id,
     ad: s.yemek,
     kategori: s.kategori,
     kalori: s.kalori,
     vejetaryen: Boolean(s.vejetaryen),
-    alerjenler: s.alerjenler ? s.alerjenler.split(', ') : [],
-    alerjen_idler: s.alerjen_idler ? s.alerjen_idler.split(',').map(Number) : [],
+    alerjenler: alerjenHaritasi.get(s.yemek_id) || [], // [{ id, ad }]
   }));
   return {
     id: ilk.menu_id,
@@ -54,6 +78,8 @@ async function icerik(havuz, menuId) {
     rezervasyon_son: ilk.rezervasyon_son,
     ogrenci_fiyati: ilk.ogrenci_fiyati,
     personel_fiyati: ilk.personel_fiyati,
+    yarim_porsiyon_orani: ilk.yarim_porsiyon_orani, // null: bu öğünde yarım porsiyon yok
+    onbellek_surumu: config.menuOnbellekSurumu,
     yemekler,
     toplam_kalori: yemekler.reduce((t, y) => t + y.kalori, 0),
     tamami_vejetaryen: yemekler.every((y) => y.vejetaryen),
@@ -127,7 +153,14 @@ async function haftalik(havuz, { yemekhaneId, baslangic, kullaniciId, rol }) {
             d.kapasite, d.bos_yer, d.rezervasyon_son,
             (NOW() >= d.rezervasyon_son) AS kapandi,
             IF(? = 'ogrenci', m.ogrenci_fiyati, m.personel_fiyati) AS fiyat,
-            r.id AS rezervasyon_id, r.durum AS rezervasyon_durum,
+            ROUND(IF(? = 'ogrenci', m.ogrenci_fiyati, m.personel_fiyati) * o.yarim_porsiyon_orani, 2) AS yarim_fiyat,
+            (SELECT GROUP_CONCAT(DISTINCT a.ad ORDER BY a.ad SEPARATOR ', ')
+               FROM menu_yemekleri my
+               JOIN yemek_alerjenleri ya       ON ya.yemek_id = my.yemek_id
+               JOIN kullanici_alerjenleri ka   ON ka.alerjen_id = ya.alerjen_id AND ka.kullanici_id = ?
+               JOIN alerjenler a               ON a.id = ya.alerjen_id
+              WHERE my.menu_id = m.id) AS uyari_alerjenler,
+            r.id AS rezervasyon_id, r.durum AS rezervasyon_durum, r.porsiyon AS rezervasyon_porsiyon,
             (SELECT GROUP_CONCAT(x.yemek ORDER BY x.kategori_sira, x.yemek SEPARATOR ', ')
                FROM v_menu_detay x WHERE x.menu_id = m.id) AS yemekler
        FROM menuler m
@@ -137,9 +170,14 @@ async function haftalik(havuz, { yemekhaneId, baslangic, kullaniciId, rol }) {
       WHERE m.yemekhane_id = ?
         AND m.tarih >= ? AND m.tarih < DATE_ADD(?, INTERVAL 7 DAY)
       ORDER BY m.tarih, o.sira`,
-    [rol, kullaniciId, yemekhaneId, baslangic, baslangic]
+    [rol, rol, kullaniciId, kullaniciId, yemekhaneId, baslangic, baslangic]
   );
-  return satirlar.map((s) => ({ ...s, kapandi: Boolean(s.kapandi) }));
+  return satirlar.map(({ uyari_alerjenler, ...s }) => ({
+    ...s,
+    kapandi: Boolean(s.kapandi),
+    yarim_fiyat: s.yarim_fiyat === undefined ? null : s.yarim_fiyat, // null: yarım porsiyon yok
+    uyari_alerjenleri: uyari_alerjenler ? uyari_alerjenler.split(', ') : [],
+  }));
 }
 
 // ---------------------------------------------------------------------
@@ -239,6 +277,6 @@ async function guncelle(menuId, { ogrenciFiyati, personelFiyati, yemekIdler }) {
 }
 
 module.exports = {
-  fiyatSec, secimler, menuBul, icerik, onbellekliIcerik, doluluk, kullanicininRezervasyonu, haftalik,
+  fiyatSec, yarimFiyat, secimler, menuBul, icerik, onbellekliIcerik, doluluk, kullanicininRezervasyonu, haftalik,
   rapor, tumYemekler, menuDuzenleme, olustur, guncelle,
 };

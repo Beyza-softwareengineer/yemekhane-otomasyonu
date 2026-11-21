@@ -18,8 +18,38 @@ function gunSonunaSaniye(tarih) {
 }
 
 async function oku(yemekhaneId, tarih, ogunId) {
-  const metin = await redis.get(anahtar(yemekhaneId, tarih, ogunId));
-  return metin ? JSON.parse(metin) : null;
+  const k = anahtar(yemekhaneId, tarih, ogunId);
+  const metin = await redis.get(k);
+  if (!metin) return null;
+  const veri = JSON.parse(metin);
+  // Eski yapıdaki (önceki sürümden kalan) kayıt kullanılmaz, silinir; menü veritabanından yeniden okunur.
+  if (veri.onbellek_surumu !== config.menuOnbellekSurumu) {
+    await redis.del(k);
+    console.log(`[önbellek] ${k} eski yapıda -> Redis kaydı silindi`);
+    return null;
+  }
+  return veri;
+}
+
+// Uygulama açılırken çalışır: menu:* anahtarlarından eski yapıdakileri siler.
+// (menudegisti:* işaretleri bu desene girmez.) Silinen kayıt sayısını döndürür.
+async function eskiKayitlariTemizle() {
+  let silinen = 0;
+  for await (const anahtarlar of redis.scanStream({ match: 'menu:*', count: 100 })) {
+    for (const k of anahtarlar) {
+      let eski = true;
+      try {
+        const veri = JSON.parse(await redis.get(k));
+        eski = !veri || veri.onbellek_surumu !== config.menuOnbellekSurumu;
+      } catch (err) { /* okunamayan kayıt da eski sayılır */ }
+      if (eski) {
+        await redis.del(k);
+        silinen++;
+      }
+    }
+  }
+  console.log(`[önbellek] açılışta eski yapıdaki ${silinen} menü kaydı temizlendi`);
+  return silinen;
 }
 
 async function yaz(yemekhaneId, tarih, ogunId, icerik) {
@@ -41,4 +71,4 @@ async function yakindaDegisti(yemekhaneId, tarih, ogunId) {
   return (await redis.exists(degisiklikAnahtari(yemekhaneId, tarih, ogunId))) === 1;
 }
 
-module.exports = { anahtar, oku, yaz, gecersizlestir, yakindaDegisti };
+module.exports = { anahtar, oku, yaz, gecersizlestir, yakindaDegisti, eskiKayitlariTemizle };

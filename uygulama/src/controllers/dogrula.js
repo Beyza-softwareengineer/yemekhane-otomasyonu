@@ -21,9 +21,17 @@ function tutar(deger, ad = 'Tutar') {
   return Number(metin);
 }
 
+// Porsiyon seçimi: 'tam' ya da 'yarim'. Boş gelirse tam porsiyon.
+// Hangi öğünde yarım porsiyon seçilebileceği kuralı stored procedure'dedir.
+function porsiyon(deger) {
+  if (deger === undefined || deger === null || deger === '') return 'tam';
+  if (deger !== 'tam' && deger !== 'yarim') throw new UygulamaHatasi(400, 'Porsiyon seçimi geçersiz.');
+  return deger;
+}
+
 // Bugünün tarihi (İstanbul saatiyle), GGGG-AA-GG
 function bugun() {
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 }
 
-module.exports = { tamsayi, tarih, tutar, bugun };
+module.exports = { tamsayi, tarih, tutar, porsiyon, bugun };

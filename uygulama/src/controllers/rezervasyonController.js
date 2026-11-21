@@ -11,7 +11,8 @@ async function listele(req, res) {
 // Dönen bakiye yordamın sonucudur, yani KAYNAKTAN gelir (replikaya sorulmaz).
 async function yap(req, res) {
   const menuId = dogrula.tamsayi(req.body && req.body.menu_id, 'Menü');
-  const sonuc = await rezervasyonRepo.yap(req.kullanici.id, menuId);
+  const porsiyon = dogrula.porsiyon(req.body && req.body.porsiyon);
+  const sonuc = await rezervasyonRepo.yap(req.kullanici.id, menuId, porsiyon);
   await yazmaIsaretle(req);
   res.status(201).json(sonuc);
 }

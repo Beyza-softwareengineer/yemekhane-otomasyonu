@@ -1,4 +1,5 @@
 const menuRepo = require('../repositories/menuRepo');
+const alerjenRepo = require('../repositories/alerjenRepo');
 const dogrula = require('./dogrula');
 const { okumaHavuzu } = require('../middleware/oturum');
 
@@ -18,12 +19,29 @@ async function gunMenusu(req, res) {
   const menu = await menuRepo.onbellekliIcerik(havuz, yemekhaneId, tarih, ogunId);
   if (!menu) return res.json({ menu: null });
 
-  const [doluluk, rezervasyon] = await Promise.all([
+  const [doluluk, rezervasyon, alerjenIdleri] = await Promise.all([
     menuRepo.doluluk(havuz, menu.id),
     menuRepo.kullanicininRezervasyonu(havuz, req.kullanici.id, menu.id),
+    alerjenRepo.kullaniciIdleri(havuz, req.kullanici.id),
   ]);
+
+  // Alerjen uyarısı kullanıcıya özeldir, bu yüzden önbelleğe değil, her istekte hesaplanır:
+  // yemeğin alerjenleri ile kullanıcının profilinde seçtiği alerjenler kesişiyorsa uyarı eklenir.
+  const kullaniciAlerjenleri = new Set(alerjenIdleri);
+  const yemekler = menu.yemekler.map((y) => ({
+    ...y,
+    uyari_alerjenleri: y.alerjenler.filter((a) => kullaniciAlerjenleri.has(a.id)).map((a) => a.ad),
+  }));
+  const fiyat = menuRepo.fiyatSec(req.kullanici.rol, menu);
+
   res.json({
-    menu: { ...menu, fiyat: menuRepo.fiyatSec(req.kullanici.rol, menu) },
+    menu: {
+      ...menu,
+      yemekler,
+      uyari_var: yemekler.some((y) => y.uyari_alerjenleri.length > 0),
+      fiyat,
+      yarim_fiyat: menuRepo.yarimFiyat(fiyat, menu.yarim_porsiyon_orani),
+    },
     doluluk,
     rezervasyonum: rezervasyon,
   });

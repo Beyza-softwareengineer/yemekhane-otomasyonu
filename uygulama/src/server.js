@@ -3,6 +3,7 @@ const config = require('./config');
 const routes = require('./routes');
 const hataYakala = require('./middleware/hataYakala');
 const redis = require('./redis');
+const menuOnbellekRepo = require('./repositories/menuOnbellekRepo');
 
 const app = express();
 app.disable('x-powered-by');
@@ -23,6 +24,8 @@ app.use(hataYakala);
 
 const sunucu = app.listen(config.port, '0.0.0.0', () => {
   console.log(`Uygulama ${config.port} portunda dinliyor.`);
+  // Aşama 4: eski yapıdaki menü kayıtlarını Redis'ten temizle (uygulamayı engellemez)
+  menuOnbellekRepo.eskiKayitlariTemizle().catch((err) => console.error(`[önbellek] açılış temizliği hatası: ${err.message}`));
 });
 
 function kapat() {

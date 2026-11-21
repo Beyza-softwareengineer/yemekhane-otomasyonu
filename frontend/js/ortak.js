@@ -89,12 +89,16 @@
     return Y.h('span', { sinif: 'etiket ' + sinif }, metin);
   };
 
+  // Porsiyon: yalnızca yarım porsiyon etiketle gösterilir (tam porsiyon varsayılandır)
+  Y.porsiyonAdi = function (porsiyon) { return porsiyon === 'yarim' ? 'Yarım porsiyon' : 'Tam porsiyon'; };
+
   // ---------- Üst menü ----------
   const SAYFALAR = [
     ['menu', '/menu.html', 'Günün Menüsü'],
     ['haftalik', '/haftalik.html', 'Haftalık Menü'],
     ['rezervasyonlarim', '/rezervasyonlarim.html', 'Rezervasyonlarım'],
     ['bakiye', '/bakiye.html', 'Bakiye'],
+    ['profil', '/profil.html', 'Profil'],
     ['degerlendirme', '/degerlendirme.html', 'Değerlendirme'],
     ['yonetici', '/yonetici.html', 'Yönetici'],
   ];

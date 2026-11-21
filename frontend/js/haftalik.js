@@ -23,21 +23,35 @@
 
     // Düğmenin durumu sunucudan gelen bayraklara göre belirlenir (kapandi, bos_yer, rezervasyon_durum)
     function dugmeYap(m) {
-      if (m.rezervasyon_durum === 'aktif') return h('button', { sinif: 'dugme', type: 'button', disabled: true }, 'Rezerve edildi');
-      if (m.rezervasyon_durum === 'kullanildi') return h('button', { sinif: 'dugme', type: 'button', disabled: true }, 'Kullanıldı');
-      if (m.kapandi) return h('button', { sinif: 'dugme', type: 'button', disabled: true }, 'Süre doldu');
-      if (m.bos_yer <= 0) return h('button', { sinif: 'dugme', type: 'button', disabled: true }, 'Dolu');
-      return h('button', { sinif: 'dugme', type: 'button', onclick: (olay) => rezervasyonYap(m, olay.currentTarget) }, 'Rezervasyon yap');
+      const pasif = (metin) => h('button', { sinif: 'dugme', type: 'button', disabled: true }, metin);
+      if (m.rezervasyon_durum === 'aktif' || m.rezervasyon_durum === 'kullanildi') {
+        return h('div', { sinif: 'ogun-islem' },
+          pasif(m.rezervasyon_durum === 'aktif' ? 'Rezerve edildi' : 'Kullanıldı'),
+          h('span', { sinif: 'soluk' }, Y.porsiyonAdi(m.rezervasyon_porsiyon)));
+      }
+      if (m.kapandi) return pasif('Süre doldu');
+      if (m.bos_yer <= 0) return pasif('Dolu');
+
+      // Yarım porsiyon seçeneği yalnızca sunucu yarim_fiyat gönderdiyse (öğle, akşam) gösterilir.
+      // Kahvaltıda yarim_fiyat yoktur, seçim kutusu da yoktur.
+      const porsiyon = m.yarim_fiyat !== null
+        ? h('select', { 'aria-label': 'Porsiyon seçimi', sinif: 'porsiyon-sec' },
+            h('option', { value: 'tam' }, 'Tam porsiyon · ' + Y.para(m.fiyat)),
+            h('option', { value: 'yarim' }, 'Yarım porsiyon · ' + Y.para(m.yarim_fiyat)))
+        : null;
+      return h('div', { sinif: 'ogun-islem' }, porsiyon,
+        h('button', { sinif: 'dugme', type: 'button',
+          onclick: (olay) => rezervasyonYap(m, porsiyon ? porsiyon.value : 'tam', olay.currentTarget) }, 'Rezervasyon yap'));
     }
 
-    async function rezervasyonYap(m, dugme) {
+    async function rezervasyonYap(m, porsiyon, dugme) {
       Y.bildir(bildirim, '');
       dugme.disabled = true;
       try {
-        const sonuc = await Y.api('/rezervasyonlar', { yontem: 'POST', govde: { menu_id: m.menu_id } });
+        const sonuc = await Y.api('/rezervasyonlar', { yontem: 'POST', govde: { menu_id: m.menu_id, porsiyon } });
         // Bakiye, yordamın sonucudur (kaynak sunucudan), replikadan okunmaz
         Y.bakiyeGoster(sonuc.bakiye);
-        Y.bildir(bildirim, `Rezervasyon yapıldı. Ücret: ${Y.para(sonuc.ucret)}. Yeni bakiyeniz: ${Y.para(sonuc.bakiye)}.`, 'basari');
+        Y.bildir(bildirim, `Rezervasyon yapıldı (${Y.porsiyonAdi(sonuc.porsiyon).toLowerCase()}). Ücret: ${Y.para(sonuc.ucret)}. Yeni bakiyeniz: ${Y.para(sonuc.bakiye)}.`, 'basari');
         await yukle();
       } catch (hata) {
         Y.bildir(bildirim, hata.message, 'hata'); // "Bakiye yetersiz." gibi yordam mesajı
@@ -64,6 +78,10 @@
               h('div', { sinif: 'ogun-ad' }, m.ogun, ' ',
                 h('span', { sinif: 'soluk' }, '(son: ' + Y.saat(m.rezervasyon_son) + ')')),
               h('div', { sinif: 'ogun-yemekler' }, m.yemekler),
+              m.uyari_alerjenleri.length
+                ? h('div', { style: 'margin-top:.35rem' },
+                    h('span', { sinif: 'etiket etiket-kirmizi', role: 'alert' }, '⚠ Alerjen uyarısı: ' + m.uyari_alerjenleri.join(', ')))
+                : null,
               h('div', { sinif: 'ogun-meta', style: 'margin-top:.35rem' },
                 h('span', { sinif: 'fiyat-vurgu' }, Y.para(m.fiyat)),
                 h('span', { sinif: 'soluk' }, 'Boş yer: ' + m.bos_yer + ' / ' + m.kapasite))),

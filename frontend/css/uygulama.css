@@ -89,3 +89,9 @@ legend { font-weight: 600; padding-inline: .3rem; }
 .secenek input { width: auto; flex: none; }
 .yildiz { color: #C98A00; letter-spacing: .1em; }
 .bos { color: var(--metin-soluk); text-align: center; padding: 1.5rem 0; }
+
+/* ---------- Aşama 4: porsiyon seçimi ve alerjen uyarısı ---------- */
+.ogun-islem { display: grid; gap: .4rem; justify-items: stretch; }
+.porsiyon-sec { width: 100%; }
+@media (min-width: 640px) { .ogun-islem { justify-items: end; } .porsiyon-sec { width: auto; } }
+.yemek-uyari { background: var(--hata-zemin); border-radius: 6px; padding-inline: .5rem; margin-inline: -.5rem; }

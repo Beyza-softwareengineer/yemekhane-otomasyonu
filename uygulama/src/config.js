@@ -25,4 +25,7 @@ module.exports = {
   // Yönetici bir menüyü değiştirdikten sonra bu süre boyunca menü önbelleği kaynaktan doldurulur.
   // Böylece replikasyon gecikmesi yüzünden eski içerik tekrar önbelleğe yazılmaz.
   menuDegisiklikPenceresiMs: 5000,
+  // Redis'teki menü kaydının yapı sürümü. Menü içeriğinin biçimi değişince (Aşama 4: porsiyon oranı,
+  // alerjen id+ad çiftleri) bu sayı artırılır; eski sürümdeki kayıtlar silinir.
+  menuOnbellekSurumu: 2,
 };
