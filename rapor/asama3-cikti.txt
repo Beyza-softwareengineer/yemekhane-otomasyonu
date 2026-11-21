@@ -1,0 +1,114 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261120110042
+Username: LAPTOP-51O0FTGR\Beyza
+RunAs User: LAPTOP-51O0FTGR\Beyza
+Configuration Name: 
+Machine: LAPTOP-51O0FTGR (Microsoft Windows NT 10.0.26200.0)
+Host Application: PowerShell.exe -noexit -WorkingDirectory C:\okul\yemekhane
+Process ID: 44464
+PSVersion: 5.1.26100.9818
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9818
+BuildVersion: 10.0.26100.9818
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is rapor\asama3-cikti.txt
+PS C:\okul\yemekhane> cd C:\okul\yemekhane
+PS C:\okul\yemekhane> dir uygulama\src\redis.js
+
+
+    Directory: C:\okul\yemekhane\uygulama\src
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        20.11.2026     10:32            569 redis.js
+
+
+PS C:\okul\yemekhane> dir docker-compose.yml
+
+
+    Directory: C:\okul\yemekhane
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        20.11.2026     10:53           5842 docker-compose.yml
+
+
+PS C:\okul\yemekhane> docker compose up -d --build
+
+PS C:\okul\yemekhane> docker compose ps -a
+
+PS C:\okul\yemekhane> docker compose logs uygulama --tail 10
+
+PS C:\okul\yemekhane> docker compose logs uygulama | Select-String "redis|dinliyor"
+
+uygulama-1  | Uygulama 8000 portunda dinliyor.
+uygulama-1  | [redis] ba─şlant─▒ haz─▒r
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 YOK -> veritaban─▒ndan okundu
+(replika), Redis'e yaz─▒l─▒yor
+
+
+PS C:\okul\yemekhane> docker compose logs uygulama | Select-String "önbellek"
+PS C:\okul\yemekhane> docker compose logs uygulama | Select-String "nbellek"
+
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 YOK -> veritaban─▒ndan okundu
+(replika), Redis'e yaz─▒l─▒yor
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 VAR -> Redis'ten geldi
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 VAR -> Redis'ten geldi
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 VAR -> Redis'ten geldi
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 VAR -> Redis'ten geldi
+
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli KEYS "menu:*"
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli TTL "menu:1:2026-11-20:2"
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli KEYS "menu*"
+
+PS C:\okul\yemekhane> docker compose logs uygulama --tail 10
+
+PS C:\okul\yemekhane> docker compose logs uygulama | Select-String "silindi"
+
+uygulama-1  | [├Ânbellek] menu:1:2026-11-20:2 men├╝ g├╝ncellendi -> Redis kayd─▒ sil
+indi
+
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli KEYS "menu:*"
+1) "menu:1:2026-11-20:2"
+PS C:\okul\yemekhane> docker compose exec redis redis-cli KEYS "oturum:*"
+1) "oturum:ecfeb38ad4b2a570c82b837f0c8a6d27c4aecd41f73f69e8c431f2e05470
+0946"
+PS C:\okul\yemekhane> $k = (docker compose exec redis redis-cli KEYS "oturum:*") | Select-Object -First 1
+PS C:\okul\yemekhane> docker compose exec redis redis-cli TTL $k
+(integer) 1689
+PS C:\okul\yemekhane> docker compose exec redis redis-cli TTL $k
+(integer) 1656
+PS C:\okul\yemekhane> docker compose exec redis redis-cli TTL $k
+(integer) 1794
+PS C:\okul\yemekhane> docker compose restart uygulama
+ - Container yemekhane-uygulama-1 Restarting                                            1.1s
+PS C:\okul\yemekhane> docker compose ps -a
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli KEYS "oturum:*"
+
+PS C:\okul\yemekhane> docker compose exec redis redis-cli EXISTS $k
+(integer) 0
+PS C:\okul\yemekhane> git tag
+asama-1
+asama-2
+PS C:\okul\yemekhane> git log --oneline
+
+PS C:\okul\yemekhane> git add .
+
+PS C:\okul\yemekhane> git commit -m "Aşama 3: Redis menü önbelleği ve oturum"
+
+PS C:\okul\yemekhane> git tag asama-3
+
+PS C:\okul\yemekhane> git push origin main --tags
+
